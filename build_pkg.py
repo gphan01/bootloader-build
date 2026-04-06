@@ -19,13 +19,15 @@ def main():
   
     args = parser.parse_args()
 
-    parse_version(args.version)
+    version = parse_version(args.version)
+
+    print(f'DEBUG: Version Type: {type(version)} Version: v{version[0]}.{version[1]}.{version[2]}+{version[3]}\n')
 
     config = load_config()
 
     paths = discover_paths(config)
     
-    print(f'\nDEBUG: {paths}')
+    print(f'DEBUG: {paths}\n')
 
     # print(f"Device:     {args.device}")
     # print(f"Version:    {args.version}")
@@ -41,14 +43,17 @@ def parse_version(version_str: str) -> tuple:
         print(f'Version format is invalid: {version_str}')
         sys.exit(1);
     
-    major = match.group(1)
-    minor = match.group(2)
-    patch = match.group(3)
-    rc    = match.group(4)
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    patch = int(match.group(3))
+    rc    = int(match.group(4))
 
     version_tuple = (major, minor, patch, rc)
+    for value in version_tuple:
+        if value < 0 or value > 255:
+            print(f'Error: version component out of range: {value}', file=sys.stderr)
+            sys.exit(1)
 
-    print(f'Tuple: {version_tuple}')
     return version_tuple
 
 # TODO read and load the configuration file 
@@ -107,9 +112,13 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
             if os.path.isfile(cproject_path):
                 # .cproject found in MCUXpresso project directory
-                paths['proj_path'] = entry_path
+                paths['project_path'] = entry_path
                 paths['cproject_path'] = cproject_path              
                 break;
+
+    if 'project_path' not in paths:
+        print(f'Error: no .cproject found', file=sys.stderr)
+        sys.exit(1)
     
     # 3. Tool paths = imgtool.exe and FwPkgBuidler.exe under FwPkgUtility/data/
     imgtool_path = os.path.join(utility_dir, 'data', 'imgtool.exe')
