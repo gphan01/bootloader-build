@@ -21,7 +21,11 @@ def main():
 
     parse_version(args.version)
 
-    load_config();
+    config = load_config()
+
+    paths = discover_paths(config)
+    
+    print(f'\nDEBUG: {paths}')
 
     # print(f"Device:     {args.device}")
     # print(f"Version:    {args.version}")
@@ -79,31 +83,66 @@ def load_config() -> configparser.ConfigParser:
 
     return config
 
-def discover_paths() -> dict:
-    path_dict = {}
+# Helper function to determine if the path to a file is valid
+def _is_file(path : str) -> None:
+    if not os.path.isfile(path):
+        print(f'Error: path not found at {path}', file=sys.stderr)
+        sys.exit(1)
+
+def discover_paths(config : configparser.ConfigParser) -> dict:
+    paths = {}
     # 1. Script discovery
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    path_dict["script_path"] = script_dir
+    paths["script_path"] = script_dir
+
+    # FwPkgUtility Directory
+    utility_dir = os.path.join(script_dir, 'FwPkgUtility')
 
     # 2. Firmware project directory - find script_dir for subdirectories containing a .cproject file (os.listdir() and os.path.isfile())
     entries = os.listdir(path=script_dir)
     for entry in entries:
         entry_path = os.path.join(script_dir, entry);
         if os.path.isdir(entry_path):
-            cproject_path = os.path.join(script_dir, '.cproject')
+            cproject_path = os.path.join(entry_path, '.cproject')
 
             if os.path.isfile(cproject_path):
                 # .cproject found in MCUXpresso project directory
-                path_dict["project_path"] = cproject_path              
+                paths['cproject_path'] = cproject_path              
                 break;
     
-    # 3 Tool paths = imgtool.exe and FwPkgBuidler.exe under FwPkgUtility/data/
+    # 3. Tool paths = imgtool.exe and FwPkgBuidler.exe under FwPkgUtility/data/
+    imgtool_path = os.path.join(utility_dir, 'data', 'imgtool.exe')
+    _is_file(imgtool_path)
 
-    # 4 Key paths - sign_v2_pem and enc_v2.pem udner FwPkgUtility/keys/v2
+    paths['imgtool'] = imgtool_path
 
-    # Results directory - FwPkgUtility/results
+    fwpkgbuilder_path = os.path.join(utility_dir, 'data', 'FwPkgBuilder.exe')
+    _is_file(fwpkgbuilder_path)
 
-    return path_dict
+    paths['fwpkgbuilder'] = fwpkgbuilder_path
+
+    # 4. Key paths - sign_v2.pem and enc_v2.pem under FwPkgUtility/keys/v2
+    key_pair_name = config.get('SIGNING', 'key-pair-name')
+    sign_path = os.path.join(utility_dir, 'keys', key_pair_name, f'sign_{key_pair_name}.pem')
+    _is_file(sign_path)
+
+    paths['sign_path'] = sign_path
+
+    enc_path = os.path.join(utility_dir, 'keys', key_pair_name, f'enc_{key_pair_name}.pem')
+    _is_file(enc_path)
+
+    paths['enc_path'] = enc_path
+
+    # 5. Results directory - FwPkgUtility/results
+    results_path = os.path.join(utility_dir, 'results')
+    print(results_path)
+    if not os.path.isdir(results_path):
+        print(f'Error: path not found at {results_path}', file=sys.stderr)
+        sys.exit(1)
+
+    paths['results_path'] = results_path
+
+    return paths
 
 if __name__ == "__main__":
   main();
