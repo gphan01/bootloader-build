@@ -8,13 +8,13 @@ def main():
     parser = argparse.ArgumentParser(description="Firmware build and packaging pipeline")
 
     # TODO add --device
-    parser.add_argument('-d', '--device')
+    parser.add_argument('-d', '--device', required = True, choices=['main', 'tuner', 'io', 'driver'])
     # TODO add --version
     parser.add_argument('-v', '--version');
     # TODO add --skip-build (optional)'
-    parser.add_argument('-sb', '--skip-build', action='store_true')
+    parser.add_argument('-sb', '--skip-build', required = False, action='store_true')
     # TODO add --no-cleanup (optional)
-    parser.add_argument('-nc', '--no-cleanup', action='store_true')
+    parser.add_argument('-nc', '--no-cleanup', required = False, action='store_true')
 
   
     args = parser.parse_args()
@@ -29,10 +29,6 @@ def main():
     
     print(f'DEBUG: {paths}\n')
 
-    # print(f"Device:     {args.device}")
-    # print(f"Version:    {args.version}")
-    # print(f"Skip build: {args.skip_build}")
-    # print(f"No cleanup: {args.no_cleanup}")
 
 # TODO parse_version(version) 0.20.1+1
 def parse_version(version_str: str) -> tuple:
