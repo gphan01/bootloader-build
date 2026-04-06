@@ -107,6 +107,7 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
             if os.path.isfile(cproject_path):
                 # .cproject found in MCUXpresso project directory
+                paths['proj_path'] = entry_path
                 paths['cproject_path'] = cproject_path              
                 break;
     
