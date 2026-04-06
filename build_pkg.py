@@ -10,7 +10,7 @@ def main():
     # TODO add --device
     parser.add_argument('-d', '--device', required = True, choices=['main', 'tuner', 'io', 'driver'])
     # TODO add --version
-    parser.add_argument('-v', '--version');
+    parser.add_argument('-v', '--version')
     # TODO add --skip-build (optional)'
     parser.add_argument('-sb', '--skip-build', required = False, action='store_true')
     # TODO add --no-cleanup (optional)
@@ -37,7 +37,7 @@ def parse_version(version_str: str) -> tuple:
     # The version format is invalid.
     if match is None:
         print(f'Version format is invalid: {version_str}')
-        sys.exit(1);
+        sys.exit(1)
     
     major = int(match.group(1))
     minor = int(match.group(2))
@@ -110,7 +110,7 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
                 # .cproject found in MCUXpresso project directory
                 paths['project_path'] = entry_path
                 paths['cproject_path'] = cproject_path              
-                break;
+                break
 
     if 'project_path' not in paths:
         print(f'Error: no .cproject found', file=sys.stderr)
