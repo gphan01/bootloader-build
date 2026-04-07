@@ -155,13 +155,14 @@ def run_build(config : configparser.ConfigParser, paths):
     workspace_path = config.get('MCUXPRESSO', 'workspace-path')
     project_name = config.get('MCUXPRESSO', 'project-name')
 
-    project_dir = paths['project_dir']
+    project_path = paths['project_path']
+    script_path = paths['script_path']
     
-
+#ook
     # 3. Run arguments
     command = [ide_path, '-nosplash', '--launcher.suppressErrors', '-application', 
                  'org.eclipse.cdt.managedbuilder.core.headlessbuild', 
-                 '-data', workspace_path, '-importAll', project_dir,'-cleanBuild', f'{project_name}/Debug' ]
+                 '-data', workspace_path, '-importAll', script_path,'-cleanBuild', f'{project_name}/Debug' ]
     
     # 4. run command with with subprocess.run
     result = subprocess.run(command)
