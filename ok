@@ -1,0 +1,13 @@
+Write a discover_firmware() function that:
+	1.	Takes device (string) and paths (dict) as parameters
+	2.	Determines the expected extension based on device:
+	∙	main or tuner → .bin
+	∙	driver, io, or sense → .hex
+	3.	Looks in paths['project_path']/Debug/ for files matching that extension
+	4.	If exactly one match found → return its full path
+	5.	If zero or multiple matches → print error, sys.exit(1)
+Use the glob module — it’s built for exactly this. Look up:
+	∙	glob.glob(pattern) — returns a list of paths matching a shell-style pattern
+	∙	Pattern example: os.path.join(debug_dir, '*.bin')
+Hints:
+	∙	A dictionary is a clean way to map device → extension:
