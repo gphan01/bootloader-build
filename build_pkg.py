@@ -4,6 +4,7 @@ import re
 import configparser
 import os
 import subprocess
+import glob
 
 def main():
     parser = argparse.ArgumentParser(description="Firmware build and packaging pipeline")
@@ -23,8 +24,11 @@ def main():
 
     paths = discover_paths(config)
 
-    run_build(config, paths)
+    if not args.skip_build:
+        if not run_build(config, paths):
+            sys.exit(1)
 
+    discover_firmware(config=config, device=args.device, paths=paths)
     print(f'DEBUG: {paths}\n')
 
 
@@ -149,16 +153,14 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
     return paths
 
-def run_build(config : configparser.ConfigParser, paths):
+def run_build(config : configparser.ConfigParser, paths) -> bool:
     # 2, MCUXpresso Section 
     ide_path = config.get('MCUXPRESSO', 'ide-path')
     workspace_path = config.get('MCUXPRESSO', 'workspace-path')
     project_name = config.get('MCUXPRESSO', 'project-name')
 
-    project_path = paths['project_path']
     script_path = paths['script_path']
     
-#ook
     # 3. Run arguments
     command = [ide_path, '-nosplash', '--launcher.suppressErrors', '-application', 
                  'org.eclipse.cdt.managedbuilder.core.headlessbuild', 
@@ -166,9 +168,40 @@ def run_build(config : configparser.ConfigParser, paths):
     
     # 4. run command with with subprocess.run
     result = subprocess.run(command)
-
     print(f'DEBUG: {result.returncode}')
 
+    if result.returncode != 0:
+        return False
+    
+    return True
+
+# Write a discover_firmware() function that:
+	#1.	Takes device (string) and paths (dict) as parameters
+def discover_firmware(config : configparser.ConfigParser, device : str, paths : dict) -> None:
+      
+	#2.	Determines the expected extension based on device: 	main or tuner -> .bin
+	# driver, io, or sense -> .hex
+    extensions = {'main'  : '.bin',
+           'tuner' : '.bin',
+           'io'    : '.hex',
+           'driver': '.hex'
+            }
+    
+    device_extension = f'{extensions[device]}'
+    project_name = config.get('MCUXPRESSO', 'project-name')
+
+    project_path = paths['project_path']
+    #3.	Looks in paths['project_path']/Debug/ for files matching that extension 
+    debug_path = os.path.join(project_path, 'Debug')
+    eoc_path = os.path.join(debug_path, f'{project_name}{device_extension}')
+    print(f'EOC PATH: {eoc_path}')
+    eoc = glob.glob(eoc_path)
+    print(f'EOC List: {eoc}')
+    if len(eoc) == 1:
+          paths['bin_path'] = eoc_path
+    else:
+        print(f'Error: multiple EOCs or none found')
+        sys.exit(1)
 
 if __name__ == "__main__":
   main();
