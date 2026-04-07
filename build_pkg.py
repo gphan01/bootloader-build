@@ -194,9 +194,9 @@ def discover_firmware(config : configparser.ConfigParser, device : str, paths : 
     #3.	Looks in paths['project_path']/Debug/ for files matching that extension 
     debug_path = os.path.join(project_path, 'Debug')
     eoc_path = os.path.join(debug_path, f'{project_name}{device_extension}')
-    print(f'EOC PATH: {eoc_path}')
+
     eoc = glob.glob(eoc_path)
-    print(f'EOC List: {eoc}')
+
     if len(eoc) == 1:
           paths['bin_path'] = eoc_path
     else:
