@@ -1,0 +1,42 @@
+def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, version_str: str) -> str:
+    """
+    Signs .bin firmware with imgtool (signing + optional encryption).
+    For .hex devices, skips signing and returns the original file path.
+    Returns the output path on success, None on failure.
+    """
+
+    # TODO 1: Determine device type (.bin vs .hex)
+    #         - main/tuner -> .bin -> sign with imgtool
+    #         - driver/io  -> .hex -> skip signing, return input path unchanged
+    #         Use a set or list to check membership, e.g. if device in ('main', 'tuner')
+
+    # TODO 2: Pull bootloader config values
+    #         - header-size (string, pass as-is to imgtool)
+    #         - slot-size   (string, pass as-is)
+    #         - align       (string)
+    #         - pad-header  (bool, use config.getboolean)
+
+    # TODO 3: Pull signing config values
+    #         - encryption-enabled (bool, use config.getboolean)
+
+    # TODO 4: Build output path
+    #         - Filename convention: {device}_fw{version_str}.tmp
+    #         - Place it in paths['results_path']
+    #         - Use os.path.join() to build the full path
+
+    # TODO 5: Build the imgtool command as a list of strings
+    #         - Start with required flags: imgtool path, 'sign', --key, --align, --header-size, --slot-size, --version
+    #         - Required positional args at the end: input path, output path
+
+    # TODO 6: Conditionally append --pad-header if pad-header is True
+    #         - Use cmd.append('--pad-header')
+
+    # TODO 7: Conditionally append --encrypt <enc_path> if encryption is enabled
+    #         - Note: this is TWO list elements, not one. Use cmd.extend(['--encrypt', enc_path])
+    #           or two separate append() calls
+
+    # TODO 8: Run the command with subprocess.run()
+    #         - Print the command for debugging: print(f'DEBUG: cmd = {cmd}')
+    #         - Check result.returncode
+
+    # TODO 9: Return the output path on success, None on failure
