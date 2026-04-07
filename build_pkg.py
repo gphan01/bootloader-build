@@ -3,20 +3,16 @@ import sys
 import re
 import configparser
 import os
+import subprocess
 
 def main():
     parser = argparse.ArgumentParser(description="Firmware build and packaging pipeline")
 
-    # TODO add --device
     parser.add_argument('-d', '--device', required = True, choices=['main', 'tuner', 'io', 'driver'])
-    # TODO add --version
-    parser.add_argument('-v', '--version')
-    # TODO add --skip-build (optional)'
+    parser.add_argument('-v', '--version', required = True)
     parser.add_argument('-sb', '--skip-build', required = False, action='store_true')
-    # TODO add --no-cleanup (optional)
     parser.add_argument('-nc', '--no-cleanup', required = False, action='store_true')
-
-  
+ 
     args = parser.parse_args()
 
     version = parse_version(args.version)
@@ -26,7 +22,9 @@ def main():
     config = load_config()
 
     paths = discover_paths(config)
-    
+
+    run_build(config, paths)
+
     print(f'DEBUG: {paths}\n')
 
 
@@ -132,6 +130,7 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     sign_path = os.path.join(utility_dir, 'keys', key_pair_name, f'sign_{key_pair_name}.pem')
     _is_file(sign_path)
 
+
     paths['sign_path'] = sign_path
 
     enc_path = os.path.join(utility_dir, 'keys', key_pair_name, f'enc_{key_pair_name}.pem')
@@ -149,6 +148,26 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     paths['results_path'] = results_path
 
     return paths
+
+def run_build(config : configparser.ConfigParser, paths):
+    # 2, MCUXpresso Section 
+    ide_path = config.get('MCUXPRESSO', 'ide-path')
+    workspace_path = config.get('MCUXPRESSO', 'workspace-path')
+    project_name = config.get('MCUXPRESSO', 'project-name')
+
+    project_dir = paths['project_dir']
+    
+
+    # 3. Run arguments
+    command = [ide_path, '-nosplash', '--launcher.suppressErrors', '-application', 
+                 'org.eclipse.cdt.managedbuilder.core.headlessbuild', 
+                 '-data', workspace_path, '-importAll', project_dir,'-cleanBuild', f'{project_name}/Debug' ]
+    
+    # 4. run command with with subprocess.run
+    result = subprocess.run(command)
+
+    print(f'DEBUG: {result.returncode}')
+
 
 if __name__ == "__main__":
   main();
