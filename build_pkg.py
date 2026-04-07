@@ -28,7 +28,7 @@ def main():
         if not run_build(config, paths):
             sys.exit(1)
 
-    discover_firmware(config=config, device=args.device, paths=paths)
+    discover_eoc(device=args.device, paths=paths)
     print(f'DEBUG: {paths}\n')
 
 
@@ -174,33 +174,33 @@ def run_build(config : configparser.ConfigParser, paths) -> bool:
         return False
     
     return True
-
-# Write a discover_firmware() function that:
-	#1.	Takes device (string) and paths (dict) as parameters
-def discover_firmware(config : configparser.ConfigParser, device : str, paths : dict) -> None:
+"""
+    Finds the EOC for the respective device.
+    Note: EOC = Executable Object Code
+"""
+def discover_eoc(device : str, paths : dict) -> None:
       
-	#2.	Determines the expected extension based on device: 	main or tuner -> .bin
-	# driver, io, or sense -> .hex
     extensions = {'main'  : '.bin',
            'tuner' : '.bin',
            'io'    : '.hex',
            'driver': '.hex'
-            }
+           }
     
-    device_extension = f'{extensions[device]}'
-    project_name = config.get('MCUXPRESSO', 'project-name')
+    device_extension = extensions[device]
 
     project_path = paths['project_path']
-    #3.	Looks in paths['project_path']/Debug/ for files matching that extension 
     debug_path = os.path.join(project_path, 'Debug')
-    eoc_path = os.path.join(debug_path, f'{project_name}{device_extension}')
+    pattern = os.path.join(debug_path, f'*{device_extension}')
 
-    eoc = glob.glob(eoc_path)
+    matches = glob.glob(pattern)
 
-    if len(eoc) == 1:
-          paths['bin_path'] = eoc_path
+    if len(matches) == 1:
+        paths['eoc_path'] = matches[0]
+    elif len(matches) == 0:
+        print(f'Error: no {device_extension} file found at {debug_path}', file=sys.stderr)
+        sys.exit(1)
     else:
-        print(f'Error: multiple EOCs or none found')
+        print(f'Error: multiple {device_extension} files found at {debug_path}', file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
