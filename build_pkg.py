@@ -188,10 +188,7 @@ def run_build(config : configparser.ConfigParser, paths) -> bool:
     
     return True
 
-"""
-    Finds the EOC for the respective device.
-    Note: EOC = Executable Object Code
-"""
+
 def discover_eoc(device : str, paths : dict) -> None:
      
     device_extension = DEVICE_EXTENSIONS[device]
@@ -218,34 +215,20 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
     Returns the output path on success, None on failure.
     """
     input_path = paths['eoc_path']
-    # TODO 1: Determine device type (.bin vs .hex)
-    #         - main/tuner -> .bin -> sign with imgtool
-    #         - driver/io  -> .hex -> skip signing, return input path unchanged
+
     if DEVICE_EXTENSIONS.get(device) != '.bin':
         return input_path 
 
-    # TODO 2: Pull bootloader config values
     header_size = config.get('BOOTLOADER', 'header-size')
     slot_size = config.get('BOOTLOADER', 'slot-size')
     align = config.get('BOOTLOADER', 'align')
     pad_header = config.getboolean('BOOTLOADER', 'pad-header')
 
-
-    # TODO 3: Pull signing config values
-    #         - encryption-enabled (bool, use config.getboolean)
     encryption_enabled = config.getboolean('SIGNING', 'encryption-enabled')
 
-
-    # TODO 4: Build output path
-    #         - Filename convention: {device}_fw{version_str}.tmp
-    #         - Place it in paths['results_path']
-    #         - Use os.path.join() to build the full path
     output_file_name = f'{device}_fw{version_str}.tmp'
     output_path = os.path.join(paths['results_path'], output_file_name)
 
-    # TODO 5: Build the imgtool command as a list of strings
-    #         - Start with required flags: imgtool path, 'sign', --key, --align, --header-size, --slot-size, --version
-    #         - Required positional args at the end: input path, output path
     img_tool_path = paths['imgtool']
     cmd = [
                 img_tool_path,
@@ -257,12 +240,9 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
                 '--version', version_str,
               ]
     
-    # TODO 6: Conditionally append --pad-header if pad-header is True
     if pad_header:
         cmd.append('--pad-header')
 
-        
-    # TODO 7: Conditionally append --encrypt <enc_path> if encryption is enabled
     if encryption_enabled:
         enc_path = paths['enc_path']
         cmd.extend(['--encrypt', enc_path])
@@ -270,17 +250,37 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
     cmd.append(input_path)
     cmd.append(output_path)
 
-    # TODO 8: Run the command with subprocess.run()
-    #         - Print the command for debugging: print(f'DEBUG: cmd = {cmd}')
-    #         - Check result.returncode
     print(f'DEBUG: command - {cmd}')
     result = subprocess.run(cmd)
 
     if result.returncode != 0:
         return None
     
-    # TODO 9: Return the output path on success, None on failure
     return output_path
+
+def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
+    """
+    Wraps signed firmware (.tmp) or hex (.hex) into a .pkg via FwPkgBuilder.
+    Returns the .pkg path on success, None on failure.
+    """
+
+    # TODO 1: Build the FwPkgBuilder command
+    #         - FwPkgBuilder path and the input file path
+    #         - FwPkgBuilder writes its output next to the input file
+    
+    # TODO 2: Print the command for debugging before running
+
+    # TODO 3: Run with subprocess.run() and check returncode
+    #         - Return None on nonzero
+
+    # TODO 4: Compute the expected .pkg output path
+    #         - Use os.path.splitext() to strip the .tmp or .hex extension
+    #         - Append '.pkg'
+
+    # TODO 5: Verify the .pkg actually exists on disk with os.path.isfile()
+    #         - Return None if missing
+
+    # TODO 6: Return the .pkg path on success
 
 if __name__ == "__main__":
   main() 
