@@ -6,6 +6,12 @@ import os
 import subprocess
 import glob
 
+DEVICE_EXTENSIONS = {'main'  : '.bin',
+                     'tuner' : '.bin',
+                     'io'    : '.hex',
+                     'driver': '.hex'
+                    }
+          
 def main():
     parser = argparse.ArgumentParser(description="Firmware build and packaging pipeline")
 
@@ -134,7 +140,6 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     sign_path = os.path.join(utility_dir, 'keys', key_pair_name, f'sign_{key_pair_name}.pem')
     _is_file(sign_path)
 
-
     paths['sign_path'] = sign_path
 
     enc_path = os.path.join(utility_dir, 'keys', key_pair_name, f'enc_{key_pair_name}.pem')
@@ -174,19 +179,14 @@ def run_build(config : configparser.ConfigParser, paths) -> bool:
         return False
     
     return True
+
 """
     Finds the EOC for the respective device.
     Note: EOC = Executable Object Code
 """
 def discover_eoc(device : str, paths : dict) -> None:
-      
-    extensions = {'main'  : '.bin',
-           'tuner' : '.bin',
-           'io'    : '.hex',
-           'driver': '.hex'
-           }
-    
-    device_extension = extensions[device]
+     
+    device_extension = DEVICE_EXTENSIONS[device]
 
     project_path = paths['project_path']
     debug_path = os.path.join(project_path, 'Debug')
@@ -203,5 +203,95 @@ def discover_eoc(device : str, paths : dict) -> None:
         print(f'Error: multiple {device_extension} files found at {debug_path}', file=sys.stderr)
         sys.exit(1)
 
+def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, version_str: str) -> str | None:
+    """
+    Signs .bin firmware with imgtool (signing + optional encryption).
+    For .hex devices, skips signing and returns the original file path.
+    Returns the output path on success, None on failure.
+    """
+    input_path = paths['eoc_path']
+    # TODO 1: Determine device type (.bin vs .hex)
+    #         - main/tuner -> .bin -> sign with imgtool
+    #         - driver/io  -> .hex -> skip signing, return input path unchanged
+    if DEVICE_EXTENSIONS.get(device) != '.bin':
+        return input_path 
+
+    # TODO 2: Pull bootloader config values
+    header_size = config.get('BOOTLOADER', 'header-size')
+    slot_size = config.get('BOOTLOADER', 'slot-size')
+    align = config.get('BOOTLOADER', 'align')
+    pad_header = config.getboolean('BOOTLOADER', 'pad-header')
+
+
+    # TODO 3: Pull signing config values
+    #         - encryption-enabled (bool, use config.getboolean)
+    encryption_enabled = config.getboolean('SIGNING', 'encryption-enabled')
+
+
+    # TODO 4: Build output path
+    #         - Filename convention: {device}_fw{version_str}.tmp
+    #         - Place it in paths['results_path']
+    #         - Use os.path.join() to build the full path
+    output_file_name_path = f'{device}_fw{version_str}.tmp'
+    output_path = os.path.join(paths['results_path'], f'{output_file_name_path}')
+
+    # TODO 5: Build the imgtool command as a list of strings
+    #         - Start with required flags: imgtool path, 'sign', --key, --align, --header-size, --slot-size, --version
+    #         - Required positional args at the end: input path, output path
+    img_tool_path = paths['imgtool']
+    cmd = [
+                img_tool_path,
+                'sign', 
+                '--key', paths['sign_path'],
+                '--align', align,
+                '--header-size', header_size,
+                '--slot-size', slot_size,
+                '--version', version_str,
+              ]
+    
+    # TODO 6: Conditionally append --pad-header if pad-header is True
+    if pad_header:
+        cmd.append('--pad-header')
+
+        
+    # TODO 7: Conditionally append --encrypt <enc_path> if encryption is enabled
+    if encryption_enabled:
+        enc_path = paths['enc_path']
+        cmd.extend(['--encrypt', enc_path])
+    
+    cmd.append(input_path)
+    cmd.append(output_path)
+
+    # TODO 8: Run the command with subprocess.run()
+    #         - Print the command for debugging: print(f'DEBUG: cmd = {cmd}')
+    #         - Check result.returncode
+    result = subprocess.run(cmd)
+
+    print(f'DEBUG: command - {cmd}')
+    if result.returncode != 0:
+        return None
+    
+    # TODO 9: Return the output path on success, None on failure
+    return output_path
+
 if __name__ == "__main__":
-  main();
+  main() 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
