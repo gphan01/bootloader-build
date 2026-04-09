@@ -35,6 +35,8 @@ def main():
             sys.exit(1)
 
     discover_eoc(device=args.device, paths=paths)
+
+    result = sign_firmware(config=config, paths=paths, device=args.device, version_str=args.version)
     print(f'DEBUG: {paths}\n')
 
 
@@ -232,8 +234,8 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
     #         - Filename convention: {device}_fw{version_str}.tmp
     #         - Place it in paths['results_path']
     #         - Use os.path.join() to build the full path
-    output_file_name_path = f'{device}_fw{version_str}.tmp'
-    output_path = os.path.join(paths['results_path'], f'{output_file_name_path}')
+    output_file_name = f'{device}_fw{version_str}.tmp'
+    output_path = os.path.join(paths['results_path'], output_file_name)
 
     # TODO 5: Build the imgtool command as a list of strings
     #         - Start with required flags: imgtool path, 'sign', --key, --align, --header-size, --slot-size, --version
