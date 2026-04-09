@@ -36,7 +36,13 @@ def main():
 
     discover_eoc(device=args.device, paths=paths)
 
-    result = sign_firmware(config=config, paths=paths, device=args.device, version_str=args.version)
+    signed_path = sign_firmware(config=config, paths=paths, device=args.device, version_str=args.version)
+    if signed_path == None:
+        print('Error: signing process failed', file=sys.stderr)
+        sys.exit(1) 
+
+    print(f'DEBUG: Signed firmare at {signed_path}\n')
+    
     print(f'DEBUG: {paths}\n')
 
 
@@ -267,9 +273,9 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
     # TODO 8: Run the command with subprocess.run()
     #         - Print the command for debugging: print(f'DEBUG: cmd = {cmd}')
     #         - Check result.returncode
+    print(f'DEBUG: command - {cmd}')
     result = subprocess.run(cmd)
 
-    print(f'DEBUG: command - {cmd}')
     if result.returncode != 0:
         return None
     
