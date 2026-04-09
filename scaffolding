@@ -40,3 +40,29 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
     #         - Check result.returncode
 
     # TODO 9: Return the output path on success, None on failure
+
+def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
+    """
+    Wraps signed firmware (.tmp) or hex (.hex) into a .pkg via FwPkgBuilder.
+    Returns the .pkg path on success, None on failure.
+    """
+
+    # TODO 1: Build the FwPkgBuilder command
+    #         - Just two elements: the FwPkgBuilder path and the input file path
+    #         - FwPkgBuilder writes its output next to the input file
+
+    # TODO 2: Print the command for debugging before running
+
+    # TODO 3: Run with subprocess.run() and check returncode
+    #         - Return None on nonzero
+
+    # TODO 4: Compute the expected .pkg output path
+    #         - Use os.path.splitext() to strip the .tmp or .hex extension
+    #         - Append '.pkg'
+
+    # TODO 5: Verify the .pkg actually exists on disk with os.path.isfile()
+    #         - FwPkgBuilder can exit 0 but fail silently — trust but verify
+    #         - Return None if missing
+
+    # TODO 6: Return the .pkg path on success
+
