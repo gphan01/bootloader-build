@@ -44,7 +44,7 @@ def main():
     print(f'DEBUG: Signed firmare at {signed_path}\n')
     
     pkg_path = package_firmware(paths=paths, device=args.device, input_path=signed_path)
-    if pkg_path == None:
+    if pkg_path is None:
         print('ERROR - Package process failed.\n', file=sys.stderr)
         sys.exit(1)
 
