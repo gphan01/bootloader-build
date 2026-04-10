@@ -43,6 +43,11 @@ def main():
 
     print(f'DEBUG: Signed firmare at {signed_path}\n')
     
+    pkg_path = package_firmware(paths=paths, device=args.device, input_path=signed_path)
+    if pkg_path == None:
+        print('ERROR - Package process failed.\n', file=sys.stderr)
+        sys.exit(1)
+
     print(f'DEBUG: {paths}\n')
 
 
@@ -238,7 +243,7 @@ def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, v
                 '--header-size', header_size,
                 '--slot-size', slot_size,
                 '--version', version_str,
-              ]
+          ]
     
     if pad_header:
         cmd.append('--pad-header')
@@ -267,20 +272,33 @@ def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
     # TODO 1: Build the FwPkgBuilder command
     #         - FwPkgBuilder path and the input file path
     #         - FwPkgBuilder writes its output next to the input file
-    
+    fwpkgbuilder = paths['fwpkgbuilder']
+    cmd = [
+            fwpkgbuilder,
+            input_path
+          ]
     # TODO 2: Print the command for debugging before running
+    print('DEBUG - Package firmware: {cmd}')
 
     # TODO 3: Run with subprocess.run() and check returncode
     #         - Return None on nonzero
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        return None
 
     # TODO 4: Compute the expected .pkg output path
     #         - Use os.path.splitext() to strip the .tmp or .hex extension
     #         - Append '.pkg'
+    base, _ = os.path.splitext(input_path)
+    pkg_path = base + '.pkg'
 
     # TODO 5: Verify the .pkg actually exists on disk with os.path.isfile()
     #         - Return None if missing
+    if not os.path.isfile(pkg_path):
+        print(f'ERROR - Generated package file missing at {pkg_path}')
 
     # TODO 6: Return the .pkg path on success
+    return pkg_path
 
 if __name__ == "__main__":
   main() 
