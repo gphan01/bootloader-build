@@ -22,9 +22,8 @@ def main():
  
     args = parser.parse_args()
 
+    # Version tuple currently unused.   
     version = parse_version(args.version)
-
-    print(f'DEBUG: Version Type: {type(version)} Version: v{version[0]}.{version[1]}.{version[2]}+{version[3]}\n')
 
     config = load_config()
 
@@ -41,17 +40,15 @@ def main():
         print('Error: signing process failed', file=sys.stderr)
         sys.exit(1) 
 
-    print(f'DEBUG: Signed firmare at {signed_path}\n')
+    # print(f'DEBUG - Signed firmare at {signed_path}\n')
     
     pkg_path = package_firmware(paths=paths, device=args.device, input_path=signed_path)
     if pkg_path is None:
         print('ERROR - Package process failed.\n', file=sys.stderr)
         sys.exit(1)
 
-    print(f'DEBUG: {paths}\n')
+    # print(f'DEBUG (main) - {paths}\n')
 
-
-# TODO parse_version(version) 0.20.1+1
 def parse_version(version_str: str) -> tuple:
     match = re.match(r'^(\d+)\.(\d+)\.(\d+)\+(\d+)$', version_str)
 
@@ -68,12 +65,11 @@ def parse_version(version_str: str) -> tuple:
     version_tuple = (major, minor, patch, rc)
     for value in version_tuple:
         if value < 0 or value > 255:
-            print(f'Error: version component out of range: {value}', file=sys.stderr)
+            print(f'ERROR (parse_version) - Version component out of range: {value}', file=sys.stderr)
             sys.exit(1)
 
     return version_tuple
 
-# TODO read and load the configuration file 
 """
 Sections:
     [BOOTLODER]
@@ -92,7 +88,6 @@ Sections:
 
 """
 def load_config() -> configparser.ConfigParser:
-    # Read the path of the script
     script_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_path, "config.ini")
 
@@ -113,14 +108,12 @@ def _is_file(path : str) -> None:
 
 def discover_paths(config : configparser.ConfigParser) -> dict:
     paths = {}
-    # 1. Script discovery
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     paths["script_path"] = script_dir
 
-    # FwPkgUtility Directory
     utility_dir = os.path.join(script_dir, 'FwPkgUtility')
 
-    # 2. Firmware project directory - find script_dir for subdirectories containing a .cproject file (os.listdir() and os.path.isfile())
     entries = os.listdir(path=script_dir)
     for entry in entries:
         entry_path = os.path.join(script_dir, entry);
@@ -137,7 +130,6 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
         print(f'Error: no .cproject found', file=sys.stderr)
         sys.exit(1)
     
-    # 3. Tool paths = imgtool.exe and FwPkgBuidler.exe under FwPkgUtility/data/
     imgtool_path = os.path.join(utility_dir, 'data', 'imgtool.exe')
     _is_file(imgtool_path)
 
@@ -148,7 +140,6 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
     paths['fwpkgbuilder'] = fwpkgbuilder_path
 
-    # 4. Key paths - sign_v2.pem and enc_v2.pem under FwPkgUtility/keys/v2
     key_pair_name = config.get('SIGNING', 'key-pair-name')
     sign_path = os.path.join(utility_dir, 'keys', key_pair_name, f'sign_{key_pair_name}.pem')
     _is_file(sign_path)
@@ -160,7 +151,6 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
     paths['enc_path'] = enc_path
 
-    # 5. Results directory - FwPkgUtility/results
     results_path = os.path.join(utility_dir, 'results')
     print(results_path)
     if not os.path.isdir(results_path):
@@ -172,21 +162,17 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     return paths
 
 def run_build(config : configparser.ConfigParser, paths) -> bool:
-    # 2, MCUXpresso Section 
     ide_path = config.get('MCUXPRESSO', 'ide-path')
     workspace_path = config.get('MCUXPRESSO', 'workspace-path')
     project_name = config.get('MCUXPRESSO', 'project-name')
 
     script_path = paths['script_path']
     
-    # 3. Run arguments
     command = [ide_path, '-nosplash', '--launcher.suppressErrors', '-application', 
                  'org.eclipse.cdt.managedbuilder.core.headlessbuild', 
                  '-data', workspace_path, '-importAll', script_path,'-cleanBuild', f'{project_name}/Debug' ]
     
-    # 4. run command with with subprocess.run
     result = subprocess.run(command)
-    print(f'DEBUG: {result.returncode}')
 
     if result.returncode != 0:
         return False
@@ -207,10 +193,10 @@ def discover_eoc(device : str, paths : dict) -> None:
     if len(matches) == 1:
         paths['eoc_path'] = matches[0]
     elif len(matches) == 0:
-        print(f'Error: no {device_extension} file found at {debug_path}', file=sys.stderr)
+        print(f'ERRO - No {device_extension} file found at {debug_path}', file=sys.stderr)
         sys.exit(1)
     else:
-        print(f'Error: multiple {device_extension} files found at {debug_path}', file=sys.stderr)
+        print(f'ERROR - Multiple {device_extension} files found at {debug_path}', file=sys.stderr)
         sys.exit(1)
 
 def sign_firmware(config: configparser.ConfigParser, paths: dict, device: str, version_str: str) -> str | None:
@@ -278,7 +264,7 @@ def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
             input_path
           ]
     # TODO 2: Print the command for debugging before running
-    print(f'DEBUG - Package firmware: {cmd}')
+    # print(f'DEBUG - Package firmware: {cmd}')
 
     # TODO 3: Run with subprocess.run() and check returncode
     #         - Return None on nonzero
