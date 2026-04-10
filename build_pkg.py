@@ -37,7 +37,7 @@ def main():
     discover_eoc(device=args.device, paths=paths)
 
     signed_path = sign_firmware(config=config, paths=paths, device=args.device, version_str=args.version)
-    if signed_path == None:
+    if signed_path is None:
         print('Error: signing process failed', file=sys.stderr)
         sys.exit(1) 
 
@@ -278,7 +278,7 @@ def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
             input_path
           ]
     # TODO 2: Print the command for debugging before running
-    print('DEBUG - Package firmware: {cmd}')
+    print(f'DEBUG - Package firmware: {cmd}')
 
     # TODO 3: Run with subprocess.run() and check returncode
     #         - Return None on nonzero
@@ -296,6 +296,7 @@ def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
     #         - Return None if missing
     if not os.path.isfile(pkg_path):
         print(f'ERROR - Generated package file missing at {pkg_path}')
+        return None
 
     # TODO 6: Return the .pkg path on success
     return pkg_path
