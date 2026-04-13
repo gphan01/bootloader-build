@@ -223,21 +223,29 @@ def prepare_project(paths: dict) -> bool:
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
     #         - Iterate inner_root.findall('.//memoryInstance')
     #         - Match the one where get('id') == 'PROGRAM_FLASH'
-
+    for mem in inner_root.findall('.//memoryInstance'):
+        mem_id = mem.get('id', '')
+        if mem_id == 'PROGRAM_FLASH':
     # TODO 9: Update its attributes
     #         - mem_elem.set('location', '0x70040400')
     #         - mem_elem.set('size', '0x140000')
+            mem.set('location', '0x70040400')
+            mem.set('size', '0x140000')
+            break;
 
     # TODO 10: Serialize inner_root back to a string
     #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
+    new_inner_text = ET.tostring(inner_root, encoding='unicode')
 
     # TODO 11: Assign it back to storage.text
     #          - storage.text = new_inner_text
+    storage.text = new_inner_text
 
     # ========== SAVE ==========
 
     # TODO 12: Write the modified tree back to disk
     #          - tree.write(cproject_path, xml_declaration=True, encoding='UTF-8')
+    tree.write(cproject_path, xml_declaration=True, encoding='UTF-8')
 
     return True
 
