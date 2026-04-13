@@ -30,6 +30,9 @@ def main():
 
     paths = discover_paths(config)
 
+    if not prepare_dot_project(config, paths):
+        sys.exit(1)
+
     if not prepare_project(paths):
         sys.exit(1)
         
@@ -51,7 +54,7 @@ def main():
         print('ERROR - Package process failed.\n', file=sys.stderr)
         sys.exit(1)
 
-    # print(f'DEBUG (main) - {paths}\n')
+    print(f'DEBUG (main) - {paths}\n')
 
 def parse_version(version_str: str) -> tuple:
     match = re.match(r'^(\d+)\.(\d+)\.(\d+)\+(\d+)$', version_str)
@@ -171,14 +174,15 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     paths['results_path'] = results_path
 
     return paths
+
 def prepare_dot_project(config: configparser.ConfigParser, paths: dict) -> bool:
     """
     Updates the <name> element in .project to match the project-name
     from the [MCUXPRESSO] section of config.ini.
     Returns True on success, False on failure.
     """
-    project_name = config.get('MCUXPRESSO', 'project-name')
-    dot_project_path = os.path.join(paths['project_path'], '.project')
+    project_name = os.path.basename(paths['project_path']) 
+    dot_project_path = paths['dot_project_path'] 
 
     if not os.path.isfile(dot_project_path):
         print(f'ERROR - .project not found at {dot_project_path}', file=sys.stderr)
@@ -244,6 +248,7 @@ def prepare_project(paths: dict) -> bool:
     pattern = r'(id="PROGRAM_FLASH"[^/]*?location=")[^"]*(".*?size=")[^"]*(")'
     replacement = r'\g<1>0x70040400\g<2>0x140000\g<3>'
     new_text, count = re.subn(pattern, replacement, text)
+
     if count == 0:
         print('ERROR - PROGRAM_FLASH memoryInstance not found', file=sys.stderr)
         return False
@@ -261,7 +266,7 @@ def prepare_project(paths: dict) -> bool:
 def run_build(config : configparser.ConfigParser, paths) -> bool:
     ide_path = config.get('MCUXPRESSO', 'ide-path')
     workspace_path = config.get('MCUXPRESSO', 'workspace-path')
-    project_name = config.get('MCUXPRESSO', 'project-name')
+    project_name = os.path.basename(paths['project_path']) 
 
     script_path = paths['script_path']
     
