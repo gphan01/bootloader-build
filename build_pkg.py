@@ -183,8 +183,8 @@ def prepare_project(paths: dict) -> bool:
         if id.startswith('com.crt.advproject.config.exe.debug'):
     # TODO 3: Within that configuration, find the defined-symbols option
     #         - Use .//option and check attribute 'superClass' == 'gnu.c.compiler.option.preprocessor.def.symbols'
-            for option in root.findall('.//option'):
-                if option.get('SuperClass') is 'gnu.c.compiler.option.preprocessor.def.symbols':
+            for option in config.findall('.//option'):
+                if option.get('superClass') == 'gnu.c.compiler.option.preprocessor.def.symbols':
     # TODO 4: Check if MFLASH_BASE_ADDR already exists 
     #         - Iterate child listOptionValue elements
     #         - If any has value starting with 'MFLASH_BASE_ADDR', skip the add
@@ -193,7 +193,7 @@ def prepare_project(paths: dict) -> bool:
                         value = item.get('value', '')
                         if value.startswith('MFLASH_BASE_ADDR'):
                             element_exists = True
-                            break;
+                            break
     # TODO 5: If missing, create and append the new listOptionValue
     #         - new_elem = ET.SubElement(option_elem, 'listOptionValue')
     #         - new_elem.set('builtIn', 'false')
