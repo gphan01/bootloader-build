@@ -167,104 +167,68 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
 def prepare_project(paths: dict) -> bool:
     """
-    Modifies .cproject to add MFLASH_BASE_ADDR symbol and update PROGRAM_FLASH memory.
+    Modifies .cproject via text surgery (not XML parsing — ElementTree mangles
+    the escaped projectStorage CDATA). Two edits:
+      1. Add MFLASH_BASE_ADDR=0x380000 to Debug defined symbols
+      2. Update PROGRAM_FLASH memoryInstance location and size
     Returns True on success, False on failure.
     """
     cproject_path = paths['cproject_path']
 
-    # TODO 1: Parse .cproject with ET.parse()
-    tree = ET.parse(cproject_path)
-    root = tree.getroot()
+    with open(cproject_path, 'r', encoding='utf-8', newline='') as f:
+        text = f.read()
 
-    # ========== EDIT 1: Add MFLASH_BASE_ADDR to Debug defined symbols ==========
+    # ========== EDIT 1: Insert MFLASH_BASE_ADDR into Debug defined symbols ==========
 
-    # TODO 2: Find the Debug configuration element
-    #         - Iterate root.findall('.//cconfiguration')
-    #         - Match the one whose 'id' attribute starts with 'com.crt.advproject.config.exe.debug'
-    debug_config_found = False
-    symbols_option_found = False
-    for config in root.findall('.//cconfiguration'):
-        config_id = config.get('id', '')
-        if config_id.startswith('com.crt.advproject.config.exe.debug'):
-            debug_config_found = True
-    # TODO 3: Within that configuration, find the defined-symbols option
-    #         - Use .//option and check attribute 'superClass' == 'gnu.c.compiler.option.preprocessor.def.symbols'
-            super_class_found = False
-            for option in config.findall('.//option'):
-                if option.get('superClass') == 'gnu.c.compiler.option.preprocessor.def.symbols':
-                    symbols_option_found = True
-    # TODO 4: Check if MFLASH_BASE_ADDR already exists 
-    #         - Iterate child listOptionValue elements
-    #         - If any has value starting with 'MFLASH_BASE_ADDR', skip the add
-                    element_exists = False
-                    for item in option.findall('listOptionValue'):
-                        value = item.get('value', '')
-                        if value.startswith('MFLASH_BASE_ADDR'):
-                            element_exists = True
-                            break
-    # TODO 5: If missing, create and append the new listOptionValue
-    #         - new_elem = ET.SubElement(option_elem, 'listOptionValue')
-    #         - new_elem.set('builtIn', 'false')
-    #         - new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
-                    if not element_exists:
-                        new_elem = ET.SubElement(option, 'listOptionValue')
-                        new_elem.set('builtIn', 'false')
-                        new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
-            break            
-    if not debug_config_found:
-        print('ERROR - Debug configuration not found', file=sys.stderr) 
-        return False  
-
-    if not symbols_option_found:
-        print('ERRRO - symbols option was not found', file=sys.stderr)
+    debug_cfg_anchor = 'id="com.crt.advproject.config.exe.debug'
+    debug_cfg_idx = text.find(debug_cfg_anchor)
+    if debug_cfg_idx == -1:
+        print('ERROR - Debug cconfiguration not found', file=sys.stderr)
         return False
 
-    # ========== EDIT 2: Update PROGRAM_FLASH memory instance ==========
-
-    # TODO 6: Find the <projectStorage> element
-    #         - storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
-    storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
-    if storage is None:
-        print('ERROR - projectStorage not found', file=sys.stderr)
-        return False
-    text = storage.text
-    if text is None:
-        print('ERROR - projectStorage not found', file=sys.stderr)
-        return False
-        
-    # TODO 7: Parse its text content as a second XML document
-    #         - inner_root = ET.fromstring(storage.text)
-    inner_root = ET.fromstring(text) 
-
-    # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
-    program_flash_found = False
-    for mem in inner_root.findall('.//memoryInstance'):
-        mem_id = mem.get('id', '')
-        if mem_id == 'PROGRAM_FLASH':
-            program_flash_found = True
-            mem.set('location', '0x70040400')
-            mem.set('size', '0x140000')
-            break
-    
-    if not program_flash_found:
-        print('ERROR - PROGRAM_FLASH memory instance not found', file=sys.stderr)
+    symbols_anchor = 'superClass="gnu.c.compiler.option.preprocessor.def.symbols"'
+    symbols_idx = text.find(symbols_anchor, debug_cfg_idx)
+    if symbols_idx == -1:
+        print('ERROR - Debug defined-symbols option not found', file=sys.stderr)
         return False
 
-    # TODO 10: Serialize inner_root back to a string
-    #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
-    new_inner_text = ET.tostring(inner_root, encoding='unicode')
+    option_close_idx = text.find('</option>', symbols_idx)
+    if option_close_idx == -1:
+        print('ERROR - closing </option> after defined-symbols not found', file=sys.stderr)
+        return False
 
-    # TODO 11: Assign it back to storage.text
-    #          - storage.text = new_inner_text
-    storage.text = new_inner_text
+    # Idempotency: skip if already present in this option block
+    option_block = text[symbols_idx:option_close_idx]
+    if 'MFLASH_BASE_ADDR' not in option_block:
+        # Match the indentation of existing listOptionValue lines (tabs in this file)
+        new_line = '\t\t\t\t\t\t\t\t\t<listOptionValue builtIn="false" value="MFLASH_BASE_ADDR=0x380000"/>\n'
+        # Find the last \n before </option> and insert there
+        insert_at = text.rfind('\n', symbols_idx, option_close_idx) + 1
+        text = text[:insert_at] + new_line + text[insert_at:]
+
+    # ========== EDIT 2: Update PROGRAM_FLASH location and size ==========
+
+    # The memoryInstance is inside escaped XML (&lt; &gt;), all on one line.
+    # Regex: find id="PROGRAM_FLASH" and replace the location and size attrs
+    # that follow it on the same element.
+    pattern = r'(id="PROGRAM_FLASH"[^/]*?location=")[^"]*(".*?size=")[^"]*(")'
+    replacement = r'\g<1>0x70040400\g<2>0x140000\g<3>'
+    new_text, count = re.subn(pattern, replacement, text)
+    if count == 0:
+        print('ERROR - PROGRAM_FLASH memoryInstance not found', file=sys.stderr)
+        return False
+    if count > 1:
+        print(f'ERROR - PROGRAM_FLASH matched {count} times, expected 1', file=sys.stderr)
+        return False
+    text = new_text
 
     # ========== SAVE ==========
 
-    # TODO 12: Write the modified tree back to disk
-    #          - tree.write(cproject_path, xml_declaration=True, encoding='UTF-8')
-    tree.write(cproject_path, xml_declaration=True, encoding='UTF-8')
+    with open(cproject_path, 'w', encoding='utf-8', newline='') as f:
+        f.write(text)
 
     return True
+
 
 def run_build(config : configparser.ConfigParser, paths) -> bool:
     ide_path = config.get('MCUXPRESSO', 'ide-path')
