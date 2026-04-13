@@ -204,8 +204,7 @@ def prepare_dot_project(paths: dict) -> bool:
 
 def prepare_project(paths: dict) -> bool:
     """
-    Modifies .cproject via text surgery (not XML parsing — ElementTree mangles
-    the escaped projectStorage CDATA). Two edits:
+    Modifies .cproject via text surgery 
       1. Add MFLASH_BASE_ADDR=0x380000 to Debug defined symbols
       2. Update PROGRAM_FLASH memoryInstance location and size
     Returns True on success, False on failure.
