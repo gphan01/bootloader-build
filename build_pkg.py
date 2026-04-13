@@ -128,6 +128,13 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
                 # .cproject found in MCUXpresso project directory
                 paths['project_path'] = entry_path
                 paths['cproject_path'] = cproject_path              
+
+                dot_project_path = os.path.join(entry_path, '.project')
+                if not os.path.isfile(dot_project_path):
+                    print(f'ERROR - .project not found at {dot_project_path}', file=sys.stderr)
+                    sys.exit(1)
+
+                paths['dot_project_path'] = dot_project_path
                 break
 
     if 'project_path' not in paths:
