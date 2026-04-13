@@ -30,7 +30,7 @@ def main():
 
     paths = discover_paths(config)
 
-    if not prepare_dot_project(config, paths):
+    if not prepare_dot_project(paths):
         sys.exit(1)
 
     if not prepare_project(paths):
@@ -175,10 +175,9 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
     return paths
 
-def prepare_dot_project(config: configparser.ConfigParser, paths: dict) -> bool:
+def prepare_dot_project(paths: dict) -> bool:
     """
     Updates the <name> element in .project to match the project-name
-    from the [MCUXPRESSO] section of config.ini.
     Returns True on success, False on failure.
     """
     project_name = os.path.basename(paths['project_path']) 
