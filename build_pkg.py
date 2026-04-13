@@ -181,13 +181,18 @@ def prepare_project(paths: dict) -> bool:
     # TODO 2: Find the Debug configuration element
     #         - Iterate root.findall('.//cconfiguration')
     #         - Match the one whose 'id' attribute starts with 'com.crt.advproject.config.exe.debug'
+    debug_config_found = False
+    symbols_option_found = False
     for config in root.findall('.//cconfiguration'):
         config_id = config.get('id', '')
         if config_id.startswith('com.crt.advproject.config.exe.debug'):
+            debug_config_found = True
     # TODO 3: Within that configuration, find the defined-symbols option
     #         - Use .//option and check attribute 'superClass' == 'gnu.c.compiler.option.preprocessor.def.symbols'
+            super_class_found = False
             for option in config.findall('.//option'):
                 if option.get('superClass') == 'gnu.c.compiler.option.preprocessor.def.symbols':
+                    symbols_option_found = True
     # TODO 4: Check if MFLASH_BASE_ADDR already exists 
     #         - Iterate child listOptionValue elements
     #         - If any has value starting with 'MFLASH_BASE_ADDR', skip the add
@@ -206,6 +211,14 @@ def prepare_project(paths: dict) -> bool:
                         new_elem.set('builtIn', 'false')
                         new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
             break            
+    if not debug_config_found:
+        print('ERROR - Debug configuration not found', file=sys.stderr) 
+        return False  
+
+    if not symbols_option_found:
+        print('ERRRO - symbols option was not found', file=sys.stderr)
+        return False
+
     # ========== EDIT 2: Update PROGRAM_FLASH memory instance ==========
 
     # TODO 6: Find the <projectStorage> element
@@ -235,7 +248,7 @@ def prepare_project(paths: dict) -> bool:
     
     if not program_flash_found:
         print('ERROR - PROGRAM_FLASH memory instance not found', file=sys.stderr)
-        sys.exit(1)
+        return False
 
     # TODO 10: Serialize inner_root back to a string
     #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
