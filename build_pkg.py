@@ -5,6 +5,7 @@ import configparser
 import os
 import subprocess
 import glob
+import xml.etree.ElementTree as ET
 
 DEVICE_EXTENSIONS = {'main'  : '.bin',
                      'tuner' : '.bin',
@@ -161,6 +162,76 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
 
     return paths
 
+def prepare_project(paths: dict) -> bool:
+    """
+    Modifies .cproject to add MFLASH_BASE_ADDR symbol and update PROGRAM_FLASH memory.
+    Returns True on success, False on failure.
+    """
+    cproject_path = paths['cproject_path']
+
+    # TODO 1: Parse .cproject with ET.parse()
+    tree = ET.parse(cproject_path)
+    root = tree.getroot()
+
+    # ========== EDIT 1: Add MFLASH_BASE_ADDR to Debug defined symbols ==========
+
+    # TODO 2: Find the Debug configuration element
+    #         - Iterate root.findall('.//cconfiguration')
+    #         - Match the one whose 'id' attribute starts with 'com.crt.advproject.config.exe.debug'
+    for config in root.findall('.//cconfiguration'):
+        id = config.get('id', '')
+        if id.startswith('com.crt.advproject.config.exe.debug'):
+    # TODO 3: Within that configuration, find the defined-symbols option
+    #         - Use .//option and check attribute 'superClass' == 'gnu.c.compiler.option.preprocessor.def.symbols'
+            for option in root.findall('.//option'):
+                if option.get('SuperClass') is 'gnu.c.compiler.option.preprocessor.def.symbols':
+    # TODO 4: Check if MFLASH_BASE_ADDR already exists 
+    #         - Iterate child listOptionValue elements
+    #         - If any has value starting with 'MFLASH_BASE_ADDR', skip the add
+                    element_exists = False
+                    for item in option.findall('listOptionValue'):
+                        value = item.get('value', '')
+                        if value.startswith('MFLASH_BASE_ADDR'):
+                            element_exists = True
+                            break;
+    # TODO 5: If missing, create and append the new listOptionValue
+    #         - new_elem = ET.SubElement(option_elem, 'listOptionValue')
+    #         - new_elem.set('builtIn', 'false')
+    #         - new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
+                    if not element_exists:
+                        new_elem = ET.SubElement(option, 'listOptionValue')
+                        new_elem.set('builtIn', 'false')
+                        new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
+                        
+    # ========== EDIT 2: Update PROGRAM_FLASH memory instance ==========
+
+    # TODO 6: Find the <projectStorage> element
+    #         - storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
+
+    # TODO 7: Parse its text content as a second XML document
+    #         - inner_root = ET.fromstring(storage.text)
+
+    # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
+    #         - Iterate inner_root.findall('.//memoryInstance')
+    #         - Match the one where get('id') == 'PROGRAM_FLASH'
+
+    # TODO 9: Update its attributes
+    #         - mem_elem.set('location', '0x70040400')
+    #         - mem_elem.set('size', '0x140000')
+
+    # TODO 10: Serialize inner_root back to a string
+    #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
+
+    # TODO 11: Assign it back to storage.text
+    #          - storage.text = new_inner_text
+
+    # ========== SAVE ==========
+
+    # TODO 12: Write the modified tree back to disk
+    #          - tree.write(cproject_path, xml_declaration=True, encoding='UTF-8')
+
+    return True
+
 def run_build(config : configparser.ConfigParser, paths) -> bool:
     ide_path = config.get('MCUXPRESSO', 'ide-path')
     workspace_path = config.get('MCUXPRESSO', 'workspace-path')
@@ -286,6 +357,7 @@ def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
 
     # TODO 6: Return the .pkg path on success
     return pkg_path
+
 
 if __name__ == "__main__":
   main() 
