@@ -30,6 +30,9 @@ def main():
 
     paths = discover_paths(config)
 
+    if not prepare_project(paths):
+        sys.exit(1)
+        
     if not args.skip_build:
         if not run_build(config, paths):
             sys.exit(1)
@@ -221,17 +224,13 @@ def prepare_project(paths: dict) -> bool:
     inner_root = ET.fromstring(text) 
 
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
-    #         - Iterate inner_root.findall('.//memoryInstance')
-    #         - Match the one where get('id') == 'PROGRAM_FLASH'
     for mem in inner_root.findall('.//memoryInstance'):
         mem_id = mem.get('id', '')
         if mem_id == 'PROGRAM_FLASH':
     # TODO 9: Update its attributes
-    #         - mem_elem.set('location', '0x70040400')
-    #         - mem_elem.set('size', '0x140000')
             mem.set('location', '0x70040400')
             mem.set('size', '0x140000')
-            break;
+            break
 
     # TODO 10: Serialize inner_root back to a string
     #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
