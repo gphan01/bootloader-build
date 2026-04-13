@@ -208,9 +208,12 @@ def prepare_project(paths: dict) -> bool:
     # TODO 6: Find the <projectStorage> element
     #         - storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
     storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
+    if storage is None:
+        print('ERROR - projectStorage not found', file=sys.stderr)
+        return False
     # TODO 7: Parse its text content as a second XML document
     #         - inner_root = ET.fromstring(storage.text)
-    inner_root = ET.fromstring(storage.text)
+    inner_root = ET.fromstring(storage.text) 
 
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
     #         - Iterate inner_root.findall('.//memoryInstance')
