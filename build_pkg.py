@@ -171,6 +171,34 @@ def discover_paths(config : configparser.ConfigParser) -> dict:
     paths['results_path'] = results_path
 
     return paths
+def prepare_dot_project(config: configparser.ConfigParser, paths: dict) -> bool:
+    """
+    Updates the <name> element in .project to match the project-name
+    from the [MCUXPRESSO] section of config.ini.
+    Returns True on success, False on failure.
+    """
+    project_name = config.get('MCUXPRESSO', 'project-name')
+    dot_project_path = os.path.join(paths['project_path'], '.project')
+
+    if not os.path.isfile(dot_project_path):
+        print(f'ERROR - .project not found at {dot_project_path}', file=sys.stderr)
+        return False
+
+    with open(dot_project_path, 'r', encoding='utf-8', newline='') as f:
+        text = f.read()
+
+    pattern = r'<name>[^<]*</name>'
+    replacement = f'<name>{project_name}</name>'
+    new_text, count = re.subn(pattern, replacement, text, count=1)
+
+    if count == 0:
+        print('ERROR - <name> element not found in .project', file=sys.stderr)
+        return False
+
+    with open(dot_project_path, 'w', encoding='utf-8', newline='') as f:
+        f.write(new_text)
+
+    return True
 
 def prepare_project(paths: dict) -> bool:
     """
