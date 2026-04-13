@@ -5,7 +5,6 @@ import configparser
 import os
 import subprocess
 import glob
-import xml.etree.ElementTree as ET
 
 DEVICE_EXTENSIONS = {'main'  : '.bin',
                      'tuner' : '.bin',
