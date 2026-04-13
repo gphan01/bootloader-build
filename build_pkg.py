@@ -178,8 +178,6 @@ def prepare_project(paths: dict) -> bool:
     with open(cproject_path, 'r', encoding='utf-8', newline='') as f:
         text = f.read()
 
-    # ========== EDIT 1: Insert MFLASH_BASE_ADDR into Debug defined symbols ==========
-
     debug_cfg_anchor = 'id="com.crt.advproject.config.exe.debug'
     debug_cfg_idx = text.find(debug_cfg_anchor)
     if debug_cfg_idx == -1:
@@ -197,16 +195,13 @@ def prepare_project(paths: dict) -> bool:
         print('ERROR - closing </option> after defined-symbols not found', file=sys.stderr)
         return False
 
-    # Idempotency: skip if already present in this option block
     option_block = text[symbols_idx:option_close_idx]
-    if 'MFLASH_BASE_ADDR' not in option_block:
+    if 'MFLASH_FILE_BASEADDR' not in option_block:
         # Match the indentation of existing listOptionValue lines (tabs in this file)
-        new_line = '\t\t\t\t\t\t\t\t\t<listOptionValue builtIn="false" value="MFLASH_BASE_ADDR=0x380000"/>\n'
+        new_line = '\t\t\t\t\t\t\t\t\t<listOptionValue builtIn="false" value="MFLASH_FILE_BASEADDR=0x380000"/>\n'
         # Find the last \n before </option> and insert there
         insert_at = text.rfind('\n', symbols_idx, option_close_idx) + 1
         text = text[:insert_at] + new_line + text[insert_at:]
-
-    # ========== EDIT 2: Update PROGRAM_FLASH location and size ==========
 
     # The memoryInstance is inside escaped XML (&lt; &gt;), all on one line.
     # Regex: find id="PROGRAM_FLASH" and replace the location and size attrs
@@ -221,8 +216,6 @@ def prepare_project(paths: dict) -> bool:
         print(f'ERROR - PROGRAM_FLASH matched {count} times, expected 1', file=sys.stderr)
         return False
     text = new_text
-
-    # ========== SAVE ==========
 
     with open(cproject_path, 'w', encoding='utf-8', newline='') as f:
         f.write(text)
