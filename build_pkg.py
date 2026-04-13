@@ -224,13 +224,18 @@ def prepare_project(paths: dict) -> bool:
     inner_root = ET.fromstring(text) 
 
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
+    program_flash_found = False
     for mem in inner_root.findall('.//memoryInstance'):
         mem_id = mem.get('id', '')
         if mem_id == 'PROGRAM_FLASH':
-    # TODO 9: Update its attributes
+            program_flash_found = True
             mem.set('location', '0x70040400')
             mem.set('size', '0x140000')
             break
+    
+    if not program_flash_found:
+        print('ERROR - PROGRAM_FLASH memory instance not found', file=sys.stderr)
+        sys.exit(1)
 
     # TODO 10: Serialize inner_root back to a string
     #          - new_inner_text = ET.tostring(inner_root, encoding='unicode')
