@@ -179,8 +179,8 @@ def prepare_project(paths: dict) -> bool:
     #         - Iterate root.findall('.//cconfiguration')
     #         - Match the one whose 'id' attribute starts with 'com.crt.advproject.config.exe.debug'
     for config in root.findall('.//cconfiguration'):
-        id = config.get('id', '')
-        if id.startswith('com.crt.advproject.config.exe.debug'):
+        config_id = config.get('id', '')
+        if config_id.startswith('com.crt.advproject.config.exe.debug'):
     # TODO 3: Within that configuration, find the defined-symbols option
     #         - Use .//option and check attribute 'superClass' == 'gnu.c.compiler.option.preprocessor.def.symbols'
             for option in config.findall('.//option'):
@@ -202,14 +202,15 @@ def prepare_project(paths: dict) -> bool:
                         new_elem = ET.SubElement(option, 'listOptionValue')
                         new_elem.set('builtIn', 'false')
                         new_elem.set('value', 'MFLASH_BASE_ADDR=0x380000')
-                        
+            break            
     # ========== EDIT 2: Update PROGRAM_FLASH memory instance ==========
 
     # TODO 6: Find the <projectStorage> element
     #         - storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
-
+    storage = root.find('.//storageModule[@moduleId="com.crt.config"]/projectStorage')
     # TODO 7: Parse its text content as a second XML document
     #         - inner_root = ET.fromstring(storage.text)
+    inner_root = ET.fromstring(storage.text)
 
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
     #         - Iterate inner_root.findall('.//memoryInstance')
