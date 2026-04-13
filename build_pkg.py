@@ -211,9 +211,14 @@ def prepare_project(paths: dict) -> bool:
     if storage is None:
         print('ERROR - projectStorage not found', file=sys.stderr)
         return False
+    text = storage.text
+    if text is None:
+        print('ERROR - projectStorage not found', file=sys.stderr)
+        return False
+        
     # TODO 7: Parse its text content as a second XML document
     #         - inner_root = ET.fromstring(storage.text)
-    inner_root = ET.fromstring(storage.text) 
+    inner_root = ET.fromstring(text) 
 
     # TODO 8: Find the memoryInstance with id="PROGRAM_FLASH"
     #         - Iterate inner_root.findall('.//memoryInstance')
