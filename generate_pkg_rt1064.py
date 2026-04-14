@@ -22,7 +22,6 @@ Expected File System:
   Preconditions:
    - Script expects this file structure. 
 
-  
 Author: 
     Gabe Phan <pphan@ambrell.com>
 
@@ -38,8 +37,9 @@ import os
 import subprocess
 import glob
 
-DEVICE_EXTENSIONS = {'main'  : '.bin',
-                     'tuner' : '.bin',
+DEVICE_EXTENSIONS = {
+                      'main'  : '.bin',
+                      'tuner' : '.bin',
                     }
           
 def main():
