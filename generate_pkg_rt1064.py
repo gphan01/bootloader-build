@@ -48,7 +48,6 @@ def main():
     parser.add_argument('-d', '--device', required = True, choices=['main', 'tuner', 'io', 'driver'])
     parser.add_argument('-v', '--version', required = True)
     parser.add_argument('-sb', '--skip-build', required = False, action='store_true')
-    parser.add_argument('-nc', '--no-cleanup', required = False, action='store_true')
  
     args = parser.parse_args()
 
