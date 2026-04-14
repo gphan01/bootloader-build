@@ -164,7 +164,7 @@ def discover_paths(config: configparser.ConfigParser, target: str) -> dict:
 
     builder_path = os.path.join(utility_dir, "data", "FwPkgBuilder.exe")
     _is_file(builder_path)
-    paths["builder_path"]
+    paths["builder_path"] = builder_path
 
     results_path = os.path.join(utility_dir, "results")
     _is_dir(results_path)
@@ -226,6 +226,7 @@ def discover_hex(paths: dict) -> None:
             f"ERROR (discover_hex) - Multiple .production.hex files found at {pattern}",
             file=sys.stderr,
         )
+        sys.exit(1)
 
 
 def package_firmware(paths: dict, target: str, input_path: str) -> str | None:
@@ -234,13 +235,13 @@ def package_firmware(paths: dict, target: str, input_path: str) -> str | None:
     (FwPkgBuilder has been observed to exit 0 without producing output).
     Returns the .pkg path on success, None on failure.
     """
-    fwpkgbuilder = paths["buider"]
+    fwpkgbuilder = paths["builder_path"]
 
     cmd = [fwpkgbuilder, input_path]
 
     result = subprocess.run(cmd)
 
-    if result != 0:
+    if result.returncode != 0:
         return None
 
     base, _ = os.path.splitext(input_path)
