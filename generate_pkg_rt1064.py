@@ -49,7 +49,7 @@ def main():
     )
 
     parser.add_argument(
-        "-d", "--device", required=True, choices=["main", "tuner", "io", "driver"]
+        "-d", "--target", required=True, choices=["main", "tuner", "io", "driver"]
     )
     parser.add_argument("-v", "--version", required=True)
     parser.add_argument("-sb", "--skip-build", required=False, action="store_true")
@@ -74,10 +74,10 @@ def main():
         if not run_build(config, paths):
             sys.exit(1)
 
-    discover_eoc(device=args.device, paths=paths)
+    discover_eoc(target=args.target, paths=paths)
 
     signed_path = sign_firmware(
-        config=config, paths=paths, device=args.device, version_str=args.version
+        config=config, paths=paths, target=args.target, version_str=args.version
     )
     if signed_path is None:
         print("Error: signing process failed", file=sys.stderr)
@@ -85,7 +85,7 @@ def main():
 
     # print(f'DEBUG (main) - Signed firmare at {signed_path}\n')
 
-    pkg_path = package_firmware(paths=paths, device=args.device, input_path=signed_path)
+    pkg_path = package_firmware(paths=paths, target=args.target, input_path=signed_path)
     if pkg_path is None:
         print("ERROR - Package process failed.\n", file=sys.stderr)
         sys.exit(1)
@@ -189,7 +189,7 @@ def discover_paths(config: configparser.ConfigParser) -> dict:
                 break
 
     if "project_path" not in paths:
-        print(f"ERROR - No .cproject found", file=sys.stderr)
+        print("ERROR - No .cproject found", file=sys.stderr)
         sys.exit(1)
 
     imgtool_path = os.path.join(utility_dir, "data", "imgtool.exe")
@@ -382,12 +382,12 @@ def run_build(config: configparser.ConfigParser, paths) -> bool:
     return True
 
 
-def discover_eoc(device: str, paths: dict) -> None:
+def discover_eoc(target: str, paths: dict) -> None:
     """
     Discovers the Executable Object Code (EOC) path.
     Returns None on success, exits with code 1 on failure.
     """
-    device_extension = DEVICE_EXTENSIONS[device]
+    device_extension = DEVICE_EXTENSIONS[target]
 
     project_path = paths["project_path"]
     debug_path = os.path.join(project_path, "Debug")
@@ -412,7 +412,7 @@ def discover_eoc(device: str, paths: dict) -> None:
 
 
 def sign_firmware(
-    config: configparser.ConfigParser, paths: dict, device: str, version_str: str
+    config: configparser.ConfigParser, paths: dict, target: str, version_str: str
 ) -> str | None:
     """
     Signs .bin firmware with imgtool (signing + optional encryption).
@@ -421,7 +421,7 @@ def sign_firmware(
     """
     input_path = paths["eoc_path"]
 
-    if DEVICE_EXTENSIONS.get(device) != ".bin":
+    if DEVICE_EXTENSIONS.get(target) != ".bin":
         return input_path
 
     header_size = config.get("BOOTLOADER", "header-size")
@@ -431,7 +431,7 @@ def sign_firmware(
 
     encryption_enabled = config.getboolean("SIGNING", "encryption-enabled")
 
-    output_file_name = f"{device}_fw{version_str}.tmp"
+    output_file_name = f"{target}_fw{version_str}.tmp"
     output_path = os.path.join(paths["results_path"], output_file_name)
 
     img_tool_path = paths["imgtool"]
@@ -469,7 +469,7 @@ def sign_firmware(
     return output_path
 
 
-def package_firmware(paths: dict, device: str, input_path: str) -> str | None:
+def package_firmware(paths: dict, target: str, input_path: str) -> str | None:
     """
     Wraps signed firmware (.tmp) or hex (.hex) into a .pkg via FwPkgBuilder.
     Returns the .pkg path on success, None on failure.
