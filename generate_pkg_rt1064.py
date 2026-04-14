@@ -49,7 +49,7 @@ def main():
     )
 
     parser.add_argument(
-        "-d", "--target", required=True, choices=["main", "tuner", "io", "driver"]
+        "-t", "--target", required=True, choices=["main", "tuner"] 
     )
     parser.add_argument("-v", "--version", required=True)
     parser.add_argument("-sb", "--skip-build", required=False, action="store_true")
