@@ -20,7 +20,7 @@ Expected File System:
     generate_pkg_rt1064.py
 
   Preconditions:
-   - Script expects this file structure.
+   - Currently the script expects this file structure.
 
 Author:
     Gabe Phan <pphan@ambrell.com>
@@ -58,7 +58,7 @@ def main():
 
     # Version tuple currently unused.
     # In the future may be useful
-    version = parse_version(args.version)
+    parse_version(args.version)
 
     config = load_config()
 
