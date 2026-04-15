@@ -5,6 +5,7 @@ import configparser
 import os
 import subprocess
 import glob
+import shutil
 
 DEVICES = ["io", "driver"]
 
@@ -42,7 +43,7 @@ def main():
 
     # TODO 8: call package_firmware, sys.exit(1) if it returns None
     hex_path = paths['hex_path']
-    pkg_path = package_firmware(paths=paths, target=args.target, input_path=hex_path)
+    pkg_path = package_firmware(paths=paths, target=args.target, version=args.version, input_path=hex_path)
 
     if pkg_path is None:
         print('ERROR (main) - Package process failed', file=sys.stderr)
@@ -229,22 +230,27 @@ def discover_hex(paths: dict) -> None:
         sys.exit(1)
 
 
-def package_firmware(paths: dict, target: str, input_path: str) -> str | None:
+def package_firmware(paths: dict, target: str, version: str, input_path: str) -> str | None:
     """
     Hands the .hex to FwPkgBuilder. Verifies the .pkg exists on disk afterward
     (FwPkgBuilder has been observed to exit 0 without producing output).
     Returns the .pkg path on success, None on failure.
     """
     fwpkgbuilder = paths["builder_path"]
+    results_dir = paths['results'] 
 
-    cmd = [fwpkgbuilder, input_path]
+    staged_name = f'{target}_fw{version}.tmp'
+    staged_path = os.path.join(results_dir, staged_name)
+    shutil.copy(input_path, staged_path)
+
+    cmd = [fwpkgbuilder, staged_path]
 
     result = subprocess.run(cmd)
 
     if result.returncode != 0:
         return None
 
-    base, _ = os.path.splitext(input_path)
+    base, _ = os.path.splitext(staged_path)
     pkg_path = base + '.pkg'
 
     if not os.path.isfile(pkg_path):
